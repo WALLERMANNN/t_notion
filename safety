@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSC & Safety Inspection Assistant</title>
+    <style>
+        :root {
+            --bg: #191919;
+            --card: #222222;
+            --border: #333333;
+            --text: #ffffff;
+            --text-muted: #aaaaaa;
+            --green: #2ecc71;
+            --red: #e74c3c;
+            --blue: #3498db;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 12px;
+        }
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 15px;
+        }
+        .header h1 { font-size: 16px; margin: 0; text-transform: uppercase; color: var(--blue); letter-spacing: 0.5px;}
+        
+        .section-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin: 15px 0 8px 4px;
+            letter-spacing: 1px;
+        }
+        
+        .item-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .item-info {
+            flex: 1;
+            padding-right: 10px;
+        }
+        .item-name { font-size: 14px; font-weight: 500; margin-bottom: 3px; }
+        .item-desc { font-size: 11px; color: var(--text-muted); }
+        
+        .status-btn {
+            border: none;
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            min-width: 75px;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+        .status-pending { background: #333333; color: #fff; }
+        .status-passed { background: rgba(46, 204, 113, 0.2); color: var(--green); border: 1px solid var(--green); }
+        .status-failed { background: rgba(231, 76, 60, 0.2); color: var(--red); border: 1px solid var(--red); }
+        
+        .stats-bar {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            justify-content: space-around;
+            font-size: 12px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .stat-num { font-size: 16px; font-weight: bold; color: var(--blue); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>LSA / FFE PSC Pre-Arrival Audit</h1>
+    </div>
+
+    <!-- Панель статистики -->
+    <div class="stats-bar">
+        <div>Проверено<br><span class="stat-num" id="stat-checked">0/0</span></div>
+        <div>Замечания<br><span class="stat-num" id="stat-failed" style="color: var(--red);">0</span></div>
+    </div>
+
+    <!-- Раздел LSA -->
+    <div class="section-title">Life-Saving Appliances (LSA)</div>
+    
+    <div class="item-card">
+        <div class="item-info">
+            <div class="item-name">Шлюпочные гидростаты (HRU)</div>
+            <div class="item-desc">Правильно ли заведены слабины ходовых концов и сроки годности HRU.</div>
+        </div>
+        <button class="status-btn status-pending" id="btn-1" onclick="toggleStatus('1')">Pending</button>
+    </div>
+
+    <div class="item-card">
+        <div class="item-info">
+            <div class="item-name">Двигатель Rescue Boat</div>
+            <div class="item-desc">Запуск в течение 2 минут, работа охлаждения не менее 5 минут.</div>
+        </div>
+        <button class="status-btn status-pending" id="btn-2" onclick="toggleStatus('2')">Pending</button>
+    </div>
+
+    <div class="item-card">
+        <div class="item-info">
+            <div class="item-name">On-Load Release Gear</div>
+            <div class="item-desc">Механизмы отдачи гаков заперты, свободны от краски и смазаны.</div>
+        </div>
+        <button class="status-btn status-pending" id="btn-3" onclick="toggleStatus('3')">Pending</button>
+    </div>
+
+    <!-- Раздел FFE -->
+    <div class="section-title">Fire Fighting Equipment (FFE)</div>
+
+    <div class="item-card">
+        <div class="item-info">
+            <div class="item-name">Emergency Fire Pump</div>
+            <div class="item-desc">Аварийный пожарный насос держит давление (минимум 2 струи с крыла мостика).</div>
+        </div>
+        <button class="status-btn status-pending" id="btn-4" onclick="toggleStatus('4')">Pending</button>
+    </div>
+
+    <div class="item-card">
+        <div class="item-info">
+            <div class="item-name">Быстрозапорные клапаны (QCV)</div>
+            <div class="item-desc">Проверка дистанционной отдачи топливных клапанов (без заклиниваний).</div>
+        </div>
+        <button class="status-btn status-pending" id="btn-5" onclick="toggleStatus('5')">Pending</button>
+    </div>
+</div>
+
+<script>
+    const items = ['1', '2', '3', '4', '5'];
+    
+    // Статусы: 0 - Pending, 1 - Passed, 2 - Failed
+    function toggleStatus(id) {
+        const btn = document.getElementById('btn-' + id);
+        let currentStatus = localStorage.getItem('safety-status-' + id) || '0';
+        
+        if (currentStatus === '0') {
+            // Переключаем на Passed
+            btn.className = 'status-btn status-passed';
+            btn.innerText = 'Passed';
+            localStorage.setItem('safety-status-' + id, '1');
+        } else if (currentStatus === '1') {
+            // Переключаем на Failed
+            btn.className = 'status-btn status-failed';
+            btn.innerText = 'Defect';
+            localStorage.setItem('safety-status-' + id, '2');
+        } else {
+            // Сбрасываем на Pending
+            btn.className = 'status-btn status-pending';
+            btn.innerText = 'Pending';
+            localStorage.setItem('safety-status-' + id, '0');
+        }
+        updateStats();
+    }
+
+    function updateStats() {
+        let checked = 0;
+        let failed = 0;
+        
+        items.forEach(id => {
+            const status = localStorage.getItem('safety-status-' + id) || '0';
+            const btn = document.getElementById('btn-' + id);
+            
+            if (status === '1') {
+                checked++;
+                btn.className = 'status-btn status-passed';
+                btn.innerText = 'Passed';
+            } else if (status === '2') {
+                checked++;
+                failed++;
+                btn.className = 'status-btn status-failed';
+                btn.innerText = 'Defect';
+            } else {
+                btn.className = 'status-btn status-pending';
+                btn.innerText = 'Pending';
+            }
+        });
+        
+        document.getElementById('stat-checked').innerText = checked + '/' + items.length;
+        document.getElementById('stat-failed').innerText = failed;
+    }
+
+    // Загрузка сохраненных состояний при старте
+    window.onload = updateStats;
+</script>
+
+</body>
+</html>
