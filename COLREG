@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COLREGs Exam Trainer</title>
+    <style>
+        :root {
+            --bg-color: #191919;
+            --card-bg: #22252a;
+            --border-color: #2f343c;
+            --text-main: #ffffff;
+            --text-muted: #9aa0a6;
+            --accent-blue: #45b3e3;
+            --accent-green: #2ecc71;
+            --accent-red: #e74c3c;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 650px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 12px;
+            margin-bottom: 15px;
+        }
+        .header h2 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: var(--accent-blue);
+            text-transform: uppercase;
+        }
+        .stats {
+            display: flex;
+            gap: 15px;
+            font-size: 13px;
+            font-family: monospace;
+        }
+        .stat-correct { color: var(--accent-green); }
+        .stat-wrong { color: var(--accent-red); }
+        
+        .progress-container {
+            background: #1b1d21;
+            border-radius: 20px;
+            height: 8px;
+            width: 100%;
+            overflow: hidden;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+        .progress-bar {
+            background: linear-gradient(90deg, #2eaadc, var(--accent-blue));
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .question-box {
+            background: #1b1d21;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .question-meta {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .question-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffffff;
+            font-family: monospace;
+        }
+        
+        .options-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .option-btn {
+            background: #252830;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            border-radius: 6px;
+            padding: 14px 18px;
+            text-align: left;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .option-btn:hover:not(:disabled) {
+            background: #2e323c;
+            border-color: var(--accent-blue);
+        }
+        .option-btn.correct {
+            background: rgba(46, 204, 113, 0.2) !important;
+            border-color: var(--accent-green) !important;
+            color: var(--accent-green);
+            font-weight: bold;
+        }
+        .option-btn.wrong {
+            background: rgba(231, 76, 60, 0.2) !important;
+            border-color: var(--accent-red) !important;
+            color: var(--accent-red);
+        }
+        
+        .results-screen {
+            display: none;
+            text-align: center;
+            padding: 20px 0;
+        }
+        .score-display {
+            font-size: 48px;
+            font-weight: bold;
+            color: var(--accent-green);
+            margin-bottom: 10px;
+            font-family: monospace;
+        }
+        .refresh-btn {
+            background: var(--accent-blue);
+            color: #191919;
+            border: none;
+            border-radius: 6px;
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 15px;
+            transition: background 0.2s;
+        }
+        .refresh-btn:hover {
+            background: #5cc2ed;
+        }
+        
+        .review-list {
+            text-align: left;
+            max-height: 250px;
+            overflow-y: auto;
+            background: #1b1d21;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            margin-top: 20px;
+            font-size: 13px;
+        }
+        .review-item {
+            padding: 6px 0;
+            border-bottom: 1px solid #252830;
+            color: #ffffff;
+        }
+        .review-item:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="game-screen">
+        <div class="header">
+            <h2>COLREGs Exam Trainer</h2>
+            <div class="stats">
+                <span>Q: <span id="q-progress">1/57</span></span>
+                <span class="stat-correct">✓ <span id="score-correct">0</span></span>
+                <span class="stat-wrong">✗ <span id="score-wrong">0</span></span>
+            </div>
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-bar" id="top-bar"></div>
+        </div>
+        
+        <div class="question-box">
+            <div class="question-meta" id="q-type">Rule Title Verification</div>
+            <div class="question-title" id="q-number">RULE 1</div>
+        </div>
+        
+        <div class="options-grid" id="options-container"></div>
+    </div>
+
+    <div class="results-screen" id="results-screen">
+        <h2>Exam Completed</h2>
+        <div class="score-display" id="final-score">0 / 0</div>
+        <p id="feedback-text">Keep practicing, Officer!</p>
+        
+        <div id="errors-box" style="display:none;">
+            <p style="text-align:left; color:var(--text-muted); font-size:12px; text-transform:uppercase; margin-bottom:5px;">Review Errors:</p>
+            <div class="review-list" id="review-list"></div>
+        </div>
+        
+        <button class="refresh-btn" onclick="initGame()">[ Restart Exam ]</button>
+    </div>
+</div>
+
+<script>
+    const colregsData = [
+        { id: "PART A", title: "General" },
+        { id: "PART B", title: "Steering and Sailing Rules" },
+        { id: "PART B: SECTION I", title: "Conduct of vessels in any condition of visibility" },
+        { id: "PART B: SECTION II", title: "Conduct of vessels in sight of one another" },
+        { id: "PART B: SECTION III", title: "Conduct of vessels in restricted visibility" },
+        { id: "PART C", title: "Lights and Shapes" },
+        { id: "PART D", title: "Sound and Light Signals" },
+        { id: "PART E", title: "Exemptions" },
+        { id: "PART F", title: "Verification of compliance with the provisions of the Convention" },
+        
+        { id: "RULE 1", title: "Application" },
+        { id: "RULE 2", title: "Responsibility" },
+        { id: "RULE 3", title: "General definitions" },
+        { id: "RULE 4", title: "Application (Steering & Sailing)" },
+        { id: "RULE 5", title: "Look-out" },
+        { id: "RULE 6", title: "Safe speed" },
+        { id: "RULE 7", title: "Risk of collision" },
+        { id: "RULE 8", title: "Action to avoid collision" },
+        { id: "RULE 9", title: "Narrow channels" },
+        { id: "RULE 10", title: "Traffic separation schemes" },
+        { id: "RULE 11", title: "Application (Vessels in sight)" },
+        { id: "RULE 12", title: "Sailing vessels" },
+        { id: "RULE 13", title: "Overtaking" },
+        { id: "RULE 14", title: "Head-on situation" },
+        { id: "RULE 15", title: "Crossing situation" },
+        { id: "RULE 16", title: "Action by give-way vessel" },
+        { id: "RULE 17", title: "Action by stand-on vessel" },
+        { id: "RULE 18", title: "Responsibilities between vessels" },
+        { id: "RULE 19", title: "Conduct of vessels in restricted visibility" },
+        { id: "RULE 20", title: "Application (Lights & Shapes)" },
+        { id: "RULE 21", title: "Definitions (Lights)" },
+        { id: "RULE 22", title: "Visibility of lights" },
+        { id: "RULE 23", title: "Power-driven vessels underway" },
+        { id: "RULE 24", title: "Towing and pushing" },
+        { id: "RULE 25", title: "Sailing vessels underway and vessels under oars" },
+        { id: "RULE 26", title: "Fishing vessels" },
+        { id: "RULE 27", title: "Vessels not under command or restricted in their ability to maneuver" },
+        { id: "RULE 28", title: "Vessels constrained by their draft" },
+        { id: "RULE 29", title: "Pilot vessels" },
+        { id: "RULE 30", title: "Anchored vessels and vessels aground" },
+        { id: "RULE 31", title: "Seaplanes" },
+        { id: "RULE 32", title: "Definitions (Signals)" },
+        { id: "RULE 33", title: "Equipment for sound signals" },
+        { id: "RULE 34", title: "Maneuvering and warning signals" },
+        { id: "RULE 35", title: "Sound signals in restricted visibility" },
+        { id: "RULE 36", title: "Signals to attract attention" },
+        { id: "RULE 37", title: "Distress signals" },
+        { id: "RULE 38", title: "Exemptions" },
+        { id: "RULE 39", title: "Definitions (Part F)" },
+        { id: "RULE 40", title: "Application (Part F)" },
+        { id: "RULE 41", title: "Verification of compliance" },
+        { id: "RULE 42", title: "Evaluation" },
+        
+        { id: "ANNEX I", title: "Positioning and technical details of lights and shapes" },
+        { id: "ANNEX II", title: "Additional signals for fishing vessels fishing in close proximity" },
+        { id: "ANNEX III", title: "Technical details of sound signal appliances" },
+        { id: "ANNEX IV", title: "Distress signals" }
+    ];
+
+    let currentQuestions = [];
+    let currentIndex = 0;
+    let correctCount = 0;
+    let wrongCount = 0;
+    let wrongAnswersList = [];
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function initGame() {
+        currentQuestions = shuffle([...colregsData]);
+        currentIndex = 0;
+        correctCount = 0;
+        wrongCount = 0;
+        wrongAnswersList = [];
+        
+        document.getElementById('game-screen').style.display = 'block';
+        document.getElementById('results-screen').style.display = 'none';
+        document.getElementById('errors-box').style.display = 'none';
+        
+        updateStats();
+        showQuestion();
+    }
+
+    function updateStats() {
+        document.getElementById('q-progress').innerText = `${currentIndex + 1}/${currentQuestions.length}`;
+        document.getElementById('score-correct').innerText = correctCount;
+        document.getElementById('score-wrong').innerText = wrongCount;
+        const progressPercent = (currentIndex / currentQuestions.length) * 100;
+        document.getElementById('top-bar').style.width = `${progressPercent}%`;
+    }
+
+    function showQuestion() {
+        if (currentIndex >= currentQuestions.length) {
+            endGame();
+            return;
+        }
+        
+        updateStats();
+        const currentQ = currentQuestions[currentIndex];
+        
+        let metaText = "Rule Title Verification";
+        if (currentQ.id.includes("PART")) metaText = "Structure: Part / Section Title";
+        if (currentQ.id.includes("ANNEX")) metaText = "Structure: Annex Specification";
+        document.getElementById('q-type').innerText = metaText;
+        document.getElementById('q-number').innerText = currentQ.id;
+        
+        let choices = [currentQ.title];
+        let allTitles = colregsData.map(item => item.title).filter(t => t !== currentQ.title);
+        shuffle(allTitles);
+        
+        choices.push(allTitles[0], allTitles[1], allTitles[2]);
+        shuffle(choices);
+        
+        const container = document.getElementById('options-container');
+        container.innerHTML = '';
+        
+        choices.forEach(choice => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = choice;
+            btn.onclick = () => checkAnswer(btn, choice, currentQ);
+            container.appendChild(btn);
+        });
+    }
+
+    function checkAnswer(selectedBtn, chosenTitle, currentQ) {
+        const buttons = document.querySelectorAll('.option-btn');
+        buttons.forEach(btn => btn.disabled = true);
+        
+        if (chosenTitle === currentQ.title) {
+            selectedBtn.classList.add('correct');
+            correctCount++;
+        } else {
+            selectedBtn.classList.add('wrong');
+            wrongCount++;
+            wrongAnswersList.push({ id: currentQ.id, correct: currentQ.title, userChosen: chosenTitle });
+            
+            buttons.forEach(btn => {
+                if (btn.innerText === currentQ.title) {
+                    btn.classList.add('correct');
+                }
+            });
+        }
+        
+        currentIndex++;
+        setTimeout(showQuestion, 1200);
+    }
+
+    function endGame() {
+        document.getElementById('game-screen').style.display = 'none';
+        document.getElementById('results-screen').style.display = 'block';
+        
+        document.getElementById('final-score').innerText = `${correctCount} / ${currentQuestions.length}`;
+        
+        let feedback = "Excellent job, Captain! True mastery of COLREGs.";
+        if (correctCount < currentQuestions.length * 0.9) feedback = "Good effort, Officer. Review your errors to stay sharp!";
+        if (correctCount < currentQuestions.length * 0.7) feedback = "Time to hit the books! Study COLREGs titles thoroughly.";
+        document.getElementById('feedback-text').innerText = feedback;
+        
+        const reviewList = document.getElementById('review-list');
+        reviewList.innerHTML = '';
+        
+        if (wrongAnswersList.length > 0) {
+            document.getElementById('errors-box').style.display = 'block';
+            wrongAnswersList.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'review-item';
+                div.innerHTML = `<strong>${item.id}</strong>: Correct is <span style="color:var(--accent-green);">${item.correct}</span> (You chose: <span style="color:var(--accent-red);">${item.userChosen}</span>)`;
+                reviewList.appendChild(div);
+            });
+        }
+    }
+
+    window.onload = initGame;
+</script>
+</body>
+</html>
